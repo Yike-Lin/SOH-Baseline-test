@@ -48,7 +48,7 @@ def load_data(args,test_battery_id):
     return data_loader
 
 def main(args):
-    for batch in [6]:
+    for batch in [1]:
         ids_list = [1,2,3,4,5,6,7,8]
         for test_id in ids_list:
             setattr(args,'batch',batch)
@@ -170,15 +170,15 @@ def multi_task_MIT():
 
 if __name__ == '__main__':
     # if just want to train one model on one battery and one input type, use this:
-    # args = get_args()
-    # for e in range(args.experiment_num):
-    #     data_loader = load_data(args, test_battery_id=args.test_battery_id)
-    #     model = SOHMode(args)
-    #     model.Train(data_loader['train'], data_loader['valid'], data_loader['test'],
-    #                 save_folder=f'results/{args.data}-{args.input_type}/{args.model}/batch{args.batch}-testbattery{args.test_battery_id}/experiment{e + 1}',
-    #                 )
+    args = get_args()
+    for e in range(args.experiment_num):
+        data_loader = load_data(args, test_battery_id=args.test_battery_id)
+        model = SOHMode(args)
+        model.Train(data_loader['train'], data_loader['valid'], data_loader['test'],
+                    save_folder=f'results/{args.data}-{args.input_type}/{args.model}/batch{args.batch}-testbattery{args.test_battery_id}/experiment{e + 1}',
+                    )
 
-    multi_task_XJTU_for_table_C10()
+    # multi_task_XJTU_for_table_C10()
 
     # multi_task_XJTU()
     # multi_task_MIT()
