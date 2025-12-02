@@ -45,6 +45,7 @@ class CNN(nn.Module):
         self.predictor = nn.Sequential(
             nn.Linear(128 * 8, 128),
             nn.ReLU(),
+            nn.Dropout(p=0.25),  # <---【新增】关键改动！防止过拟合
             nn.Linear(128, 1)
 
         )

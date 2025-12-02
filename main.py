@@ -25,7 +25,7 @@ def get_args():
     parser.add_argument('--lr',type=float,default=2e-3)
     parser.add_argument('--weight_decay', default=5e-4)
     parser.add_argument('--n_epoch',type=int,default=100)
-    parser.add_argument('--early_stop',default=30)
+    parser.add_argument('--early_stop',type=int,default=30)
     parser.add_argument('--device',default='cuda')
     parser.add_argument('--save_folder',default='results')
     parser.add_argument('--experiment_num',default=1,type=int,help='The number of times you want to repeat the same experiment')
@@ -84,13 +84,15 @@ def multi_task_XJTU_for_table_C10():
     args = get_args()
     setattr(args, 'data', 'XJTU')
     setattr(args, 'normalized_type', 'minmax')   # min-max
+    setattr(args, 'input_type','charge')         # charge
     setattr(args, 'minmax_range', (-1, 1))       # [-1,1]
     setattr(args, 'input_type', 'charge')        # complete charging data
     setattr(args, 'n_epoch', 100)
     setattr(args, 'early_stop', 30)
+    setattr(args, 'lr',2e-3)
 
-    # 5 个模型
-    for m in ['CNN', 'LSTM', 'GRU', 'MLP', 'Attention']:
+    # 5 个模型, 'LSTM', 'GRU', 'MLP', 'Attention'
+    for m in ['CNN']:
         setattr(args, 'model', m)
         main_for_all_batches_xjtu(args)   
         torch.cuda.empty_cache()
@@ -134,6 +136,61 @@ def main_for_all_batches_xjtu(args):
                     torch.cuda.empty_cache()
                     continue
 
+
+def multi_task_XJTU_table_C10(args):
+    """
+    按 Table C.10 的设定跑：
+    - data 固定 XJTU
+    - 归一化方式固定 minmax
+    - minmax_range 固定 (-1, 1)
+    其它参数（model, lr, input_type, batch, test_battery_id, experiment_num 等）
+    全部由命令行指定。
+    """
+    # 固定与 Table C.10 对齐的部分
+    setattr(args, 'data', 'XJTU')
+    setattr(args, 'normalized_type', 'minmax')   # min-max
+    setattr(args, 'minmax_range', (-1, 1))       # [-1,1]
+
+    # ---- 单电池、可重复多次实验 ----
+    # 使用命令行提供的 batch / test_battery_id / experiment_num
+    batch = args.batch
+    test_id = args.test_battery_id
+
+    print(f"[Table C10模式] data={args.data}, input_type={args.input_type}, "
+          f"model={args.model}, lr={args.lr}, "
+          f"norm={args.normalized_type}, range={args.minmax_range}, "
+          f"batch={batch}, test_battery_id={test_id}, "
+          f"n_epoch={args.n_epoch}, early_stop={args.early_stop}, "
+          f"experiment_num={args.experiment_num}")
+
+    setattr(args, 'batch', batch)
+
+    for e in range(args.experiment_num):
+        print()
+        print(args.normalized_type, args.minmax_range,
+              args.model, args.data, args.input_type,
+              batch, test_id, e)
+
+        try:
+            data_loader = load_data(args, test_battery_id=test_id)
+            model = SOHMode(args)
+            model.Train(
+                data_loader['train'],
+                data_loader['valid'],
+                data_loader['test'],
+                save_folder=(
+                    f"results/{args.data}-{args.input_type}/"
+                    f"{args.model}/batch{batch}-testbattery{test_id}/experiment{e + 1}"
+                ),
+            )
+            del model
+            del data_loader
+            torch.cuda.empty_cache()
+        except Exception as ex:
+            print("!! experiment failed with exception:", ex)
+            torch.cuda.empty_cache()
+            continue
+
 def multi_task_MIT():
 
     args = get_args()
@@ -170,15 +227,19 @@ def multi_task_MIT():
 
 if __name__ == '__main__':
     # if just want to train one model on one battery and one input type, use this:
-    args = get_args()
-    for e in range(args.experiment_num):
-        data_loader = load_data(args, test_battery_id=args.test_battery_id)
-        model = SOHMode(args)
-        model.Train(data_loader['train'], data_loader['valid'], data_loader['test'],
-                    save_folder=f'results/{args.data}-{args.input_type}/{args.model}/batch{args.batch}-testbattery{args.test_battery_id}/experiment{e + 1}',
-                    )
+    # args = get_args()
+    # for e in range(args.experiment_num):
+    #     data_loader = load_data(args, test_battery_id=args.test_battery_id)
+    #     model = SOHMode(args)
+    #     model.Train(data_loader['train'], data_loader['valid'], data_loader['test'],
+    #                 save_folder=f'results/{args.data}-{args.input_type}/{args.model}/batch{args.batch}-testbattery{args.test_battery_id}/experiment{e + 1}',
+    #                 )
 
     # multi_task_XJTU_for_table_C10()
+    
+    # 从命令行读取所有参数
+    args = get_args()
+    multi_task_XJTU_table_C10(args)
 
     # multi_task_XJTU()
     # multi_task_MIT()
