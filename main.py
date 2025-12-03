@@ -143,7 +143,15 @@ def multi_task_XJTU_table_C10(args):
     - data 固定 XJTU
     - 归一化方式固定 minmax
     - minmax_range 固定 (-1, 1)
-    其它参数（model, lr, input_type, batch, test_battery_id, experiment_num 等）
+
+    python main.py \
+    --model CNN \
+    --lr 2e-3 \
+    --input_type charge \
+    --batch 2 \
+    --test_battery_id 1 \
+    --experiment_num 3
+
     全部由命令行指定。
     """
     # 固定与 Table C.10 对齐的部分
@@ -190,6 +198,90 @@ def multi_task_XJTU_table_C10(args):
             print("!! experiment failed with exception:", ex)
             torch.cuda.empty_cache()
             continue
+
+
+def run_xjtu_tableC10_from_batch(args):
+    """
+    功能：
+    - 按 Table C.10 的设定（XJTU + minmax + [-1,1]）跑
+    - 从 args.batch 开始，一直跑到最后一个 batch（目前是 6）
+    - 每个 batch 里把所有 test_battery_id 都跑完
+    - 每个 battery 重复 args.experiment_num 次实验
+
+    用法示例：
+    python main.py \
+        --model Attention \
+        --lr 2e-3 \
+        --input_type partial_charge \
+        --batch 1 \
+        --experiment_num 3
+    表示：从 batch2 开始，batch2~batch6 都跑完，每个电池跑 3 次实验。
+    """
+    # 固定为 XJTU + minmax + [-1,1]，和 multi_task_XJTU_table_C10 一致
+    setattr(args, 'data', 'XJTU')
+    setattr(args, 'normalized_type', 'minmax')
+    setattr(args, 'minmax_range', (-1, 1))
+
+    # XJTU 各 batch 的电池编号范围
+    batch_to_ids = {
+        1: range(1, 9),   # batch1: 1-8
+        2: range(1, 16),  # batch2: 1-15
+        3: range(1, 9),
+        4: range(1, 9),
+        5: range(1, 9),
+        6: range(1, 9),
+
+    }
+
+    # 起始 batch：沿用命令行里的 --batch 参数
+    batch_start = args.batch
+    if batch_start not in batch_to_ids:
+        raise ValueError(f"batch_start={batch_start} 不在可用范围 {list(batch_to_ids.keys())} 内")
+
+    print(f"[批量 TableC10 模式] 从 batch{batch_start} 开始")
+    print(f"  data={args.data}, input_type={args.input_type}, "
+          f"model={args.model}, lr={args.lr}, "
+          f"norm={args.normalized_type}, range={args.minmax_range}, "
+          f"n_epoch={args.n_epoch}, early_stop={args.early_stop}, "
+          f"experiment_num={args.experiment_num}")
+
+    # 从 batch_start 一直跑到最后一个 batch
+    for batch in sorted(batch_to_ids.keys()):
+        if batch < batch_start:
+            continue
+
+        ids_list = batch_to_ids[batch]
+        setattr(args, 'batch', batch)
+
+        print(f"\n==== 开始 batch {batch}，电池列表: {list(ids_list)} ====")
+
+        for test_id in ids_list:
+            for e in range(args.experiment_num):
+                print()
+                print("[RUN]", args.normalized_type, args.minmax_range,
+                      args.model, args.data, args.input_type,
+                      f"batch={batch}", f"test_id={test_id}", f"exp={e}")
+
+                try:
+                    data_loader = load_data(args, test_battery_id=test_id)
+                    model = SOHMode(args)
+                    model.Train(
+                        data_loader['train'],
+                        data_loader['valid'],
+                        data_loader['test'],
+                        save_folder=(
+                            f"results/{args.data}-{args.input_type}/"
+                            f"{args.model}/batch{batch}-testbattery{test_id}/experiment{e + 1}"
+                        ),
+                    )
+                    del model
+                    del data_loader
+                    torch.cuda.empty_cache()
+                except Exception as ex:
+                    print(f"!! [WARNING] batch{batch} battery{test_id} exp{e+1} 失败，异常: {ex}")
+                    torch.cuda.empty_cache()
+                    continue
+
 
 def multi_task_MIT():
 
@@ -239,7 +331,9 @@ if __name__ == '__main__':
     
     # 从命令行读取所有参数
     args = get_args()
-    multi_task_XJTU_table_C10(args)
+    # multi_task_XJTU_table_C10(args)
+
+    run_xjtu_tableC10_from_batch(args)
 
     # multi_task_XJTU()
     # multi_task_MIT()

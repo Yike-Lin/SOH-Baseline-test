@@ -44,7 +44,7 @@ class SOHMode(nn.Module):
             self.optimizer,
             mode='min',      # 监控指标越小越好
             factor=0.5,      # 每次 lr 减半
-            patience= 15,      # 如果 5 个 epoch loss 不降，就减小 lr
+            patience= 20,      # 如果 5 个 epoch loss 不降，就减小 lr
             verbose=True     # 打印日志
         )
         # --- 修改结束 ---
