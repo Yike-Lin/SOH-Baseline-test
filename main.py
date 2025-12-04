@@ -52,7 +52,7 @@ def main(args):
         ids_list = [1,2,3,4,5,6,7,8]
         for test_id in ids_list:
             setattr(args,'batch',batch)
-            for e in range(5):
+            for e in range(3):
                 print()
                 print(args.normalized_type,args.minmax_range,args.model,args.data, args.input_type,batch,test_id,e)
                 try:
@@ -72,8 +72,9 @@ def main(args):
 def multi_task_XJTU():  # 一次性训练所有模型和所有输入类型
     args = get_args()
     setattr(args,'data','XJTU')
-    for m in ['CNN','MLP','Attention','LSTM','GRU']:
-        for type in ['handcraft_features','charge','partial_charge']:
+    # 'CNN','MLP', ,'LSTM','GRU'   'handcraft_features','charge',
+    for m in ['Attention']:
+        for type in ['partial_charge']:
             setattr(args, 'model', m)
             setattr(args, 'input_type',type)
             main(args)
@@ -213,7 +214,7 @@ def run_xjtu_tableC10_from_batch(args):
         --model Attention \
         --lr 2e-3 \
         --input_type partial_charge \
-        --batch 1 \
+        --batch 3 \
         --experiment_num 3
     表示：从 batch2 开始，batch2~batch6 都跑完，每个电池跑 3 次实验。
     """

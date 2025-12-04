@@ -31,23 +31,23 @@ class SOHMode(nn.Module):
             weight_decay=self.args.weight_decay
         )
 
-        # self.scheduler = torch.optim.lr_scheduler.MultiStepLR(
-        #         self.optimizer,
-        #         [30,70],
-        #         gamma=0.5,
-        #     )
+        self.scheduler = torch.optim.lr_scheduler.MultiStepLR(
+                self.optimizer,
+                [30,70],
+                gamma=0.5,
+            )
 
-        # --- 修改开始：更换调度器 ---
-        # 原代码：self.scheduler = torch.optim.lr_scheduler.MultiStepLR(...)
-        # 新代码：
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer,
-            mode='min',      # 监控指标越小越好
-            factor=0.5,      # 每次 lr 减半
-            patience= 20,      # 如果 5 个 epoch loss 不降，就减小 lr
-            verbose=True     # 打印日志
-        )
-        # --- 修改结束 ---
+        # # --- 修改开始：更换调度器 ---
+        # # 原代码：self.scheduler = torch.optim.lr_scheduler.MultiStepLR(...)
+        # # 新代码：
+        # self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        #     self.optimizer,
+        #     mode='min',      # 监控指标越小越好
+        #     factor=0.5,      # 每次 lr 减半
+        #     patience= 20,      # 如果 5 个 epoch loss 不降，就减小 lr
+        #     verbose=True     # 打印日志
+        # )
+        # # --- 修改结束 ---
         
 
         self.mse = torch.nn.MSELoss()
@@ -127,7 +127,7 @@ class SOHMode(nn.Module):
         for e in range(1,self.args.n_epoch+1):
             self._train_one_epoch(train_loader)
             # --- 修改注意：移除这里的 scheduler.step() ---
-            # self.scheduler.step()
+            self.scheduler.step()
             
             train_l = self.loss_meter.avg
             self.train_loss.append(train_l)
@@ -138,10 +138,10 @@ class SOHMode(nn.Module):
             self.valid_loss.append(valid_l)
 
 
-            # --- 修改开始：在这里更新 Learning Rate ---
-            # 把 Valid Loss 传给调度器
-            self.scheduler.step(valid_l) 
-            # --- 修改结束 ---
+            # # --- 修改开始：在这里更新 Learning Rate ---
+            # # 把 Valid Loss 传给调度器
+            # self.scheduler.step(valid_l) 
+            # # --- 修改结束 ---
 
             lr = self.optimizer.state_dict()['param_groups'][0]['lr']
             print(
@@ -222,7 +222,7 @@ if __name__ == '__main__':
                             choices=['charge', 'partial_charge', 'handcraft_features'])
         parser.add_argument('--batch_size', type=int, default=128)
         parser.add_argument('--normalized_type', type=str, default='minmax', choices=['minmax', 'standard'])
-        parser.add_argument('--minmax_range', type=tuple, default=(0, 1), choices=[(0, 1), (1, 1)])
+        parser.add_argument('--minmax_range', type=tuple, default=(-1, 1), choices=[(0, 1), (-1, 1)])
         parser.add_argument('--batch', type=int, default=1, choices=[1, 2, 3, 4, 5, 6, 7, 8, 9])
 
         # model
@@ -230,8 +230,8 @@ if __name__ == '__main__':
 
         parser.add_argument('--lr', type=float, default=2e-3)
         parser.add_argument('--weight_decay', default=5e-4)
-        parser.add_argument('--n_epoch', type=int, default=100)
-        parser.add_argument('--early_stop',type=int, default=30)
+        parser.add_argument('--n_epoch', type=int, default=500)
+        parser.add_argument('--early_stop',type=int, default=20)
         parser.add_argument('--device', default='cuda')
 
         args = parser.parse_args()
