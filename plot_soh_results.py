@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 # 命令
 # python plot_soh_results.py \
 #     --data XJTU \
-#     --input_type charge \
+#     --input_type partial_charge \
 #     --model CNN \
 #     --batch 1 \
-#     --test_battery_id 6 \
+#     --test_battery_id 7 \
 #     --experiment 1 \
 #     --save_dir figs \
 #     --no_show

@@ -72,9 +72,9 @@ def main(args):
 def multi_task_XJTU():  # 一次性训练所有模型和所有输入类型
     args = get_args()
     setattr(args,'data','XJTU')
-    # 'CNN','MLP', ,'LSTM','GRU'   'handcraft_features','charge',
-    for m in ['Attention']:
-        for type in ['partial_charge']:
+    
+    for m in ['CNN','MLP','Attention','LSTM','GRU']:
+        for type in ['handcraft_features','charge','partial_charge']:
             setattr(args, 'model', m)
             setattr(args, 'input_type',type)
             main(args)
@@ -148,10 +148,11 @@ def multi_task_XJTU_table_C10(args):
     python main.py \
     --model CNN \
     --lr 2e-3 \
-    --input_type charge \
-    --batch 2 \
-    --test_battery_id 1 \
+    --input_type partial_charge \
+    --batch 1 \
+    --test_battery_id 7 \
     --experiment_num 3
+
 
     全部由命令行指定。
     """
@@ -211,10 +212,10 @@ def run_xjtu_tableC10_from_batch(args):
 
     用法示例：
     python main.py \
-        --model Attention \
+        --model CNN \
         --lr 2e-3 \
         --input_type partial_charge \
-        --batch 3 \
+        --batch 5 \
         --experiment_num 3
     表示：从 batch2 开始，batch2~batch6 都跑完，每个电池跑 3 次实验。
     """
@@ -328,13 +329,12 @@ if __name__ == '__main__':
     #                 save_folder=f'results/{args.data}-{args.input_type}/{args.model}/batch{args.batch}-testbattery{args.test_battery_id}/experiment{e + 1}',
     #                 )
 
-    # multi_task_XJTU_for_table_C10()
     
     # 从命令行读取所有参数
     args = get_args()
-    # multi_task_XJTU_table_C10(args)
+    multi_task_XJTU_table_C10(args)
 
-    run_xjtu_tableC10_from_batch(args)
+    # run_xjtu_tableC10_from_batch(args)
 
     # multi_task_XJTU()
     # multi_task_MIT()
